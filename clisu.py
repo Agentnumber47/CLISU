@@ -5,6 +5,7 @@
 #### Nickname: Ground Zero [Scaled back from earlier attempts and rebuilding to higher glory]
 #### Source: https://github.com/Agentnumber47/CLISU
 #### Support me! https://ko-fi.com/agentnumber47
+#### Differences between 0.1.1 and 0.1: Added file integrity check
 
 # from colorama import init
 import argparse
