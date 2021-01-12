@@ -74,14 +74,9 @@ def sync(host_path, host, parasite_path, parasite):
         if item in parasite:
             hi, pi = render(host, parasite, item, host_path, parasite_path)
             if hi['relative path'] != pi['relative path']:
-                # Check that the items are identical
-                hi['fingerprint'] = fingerprinter(hi['full path'])
-                pi['fingerprint'] = fingerprinter(pi['full path'])
-                if hi['fingerprint'] == pi['fingerprint']:
-                    try:
-                        os.makedirs(hi['directory mirror'])
-                    except:
-                        pass
+                # If the items are identical, move to match host map
+                if fingerprinter(hi['full path']) == fingerprinter(pi['full path']):
+                    mkdir(hi['directory mirror'])
                     shutil.move(pi['full path'], hi['path mirror'])
                     rmdir(pi['directory'])
                     rmdir(pi['directory mirror'])
@@ -146,6 +141,13 @@ def generate_map(x_path):
 def rmdir(x_path):
     try:
         if len(os.listdir(x_path)) == 0: os.rmdir(x_path) # If the directory is empty, delete it
+    except:
+        pass
+    return
+
+def mkdir(x_path):
+    try:
+        os.makedirs(x_path)
     except:
         pass
     return
