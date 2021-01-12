@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-#### CLISU v 0.1
+#### CLISU v 0.1.1
 #### Code by: Agentnumber47
 #### Nickname: Ground Zero [Scaled back from earlier attempts and rebuilding to higher glory]
 #### Source: https://github.com/Agentnumber47/CLISU
