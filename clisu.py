@@ -8,29 +8,32 @@
 
 # from colorama import init
 import argparse
+from hashlib import md5
 import os
 import shutil
+
+BLOCK_SIZE = 65536
 
 def terminal(args):
     # Grab and map the host directory
     while True:
         header()
-        host_path = input("What is the master directory? [Ex. /path/to/dir]\n")
-        if host_path.lower() == "x":
+        entry = input("What is the master directory? [Ex. /path/to/dir]\n")
+        if entry.lower() == "x":
             exit()
 
-        host = verify(host_path)
+        host_path, host = verify(entry)
         if not host: input(f"\n'{host_path}' doesn't exist or is inaccessible\n")
         else: break
 
     # Grab and map the parasite directory
     while True:
         header()
-        parasite_path = input("What is the directory you want to sync to?\n")
-        if parasite_path.lower() == "x":
+        entry = input("What is the directory you want to sync to?\n")
+        if entry.lower() == "x":
             exit()
 
-        parasite = verify(parasite_path)
+        parasite_path, parasite = verify(entry)
         if not parasite: input(f"\n'{parasite_path}' doesn't exist or is inaccessible\n")
         else: break
 
@@ -39,14 +42,12 @@ def terminal(args):
     sync(host_path, host, parasite_path, parasite)
 
 def run(args):
-    host_path = args.run[0]
-    host = verify(host_path)
+    host_path, host = verify(args.run[0])
     if not host:
         print(f"ERROR: '{host_path}' doesn't exist or is inaccessible")
         return
 
-    parasite_path = args.run[1]
-    parasite = verify(parasite_path)
+    parasite_path, parasite = verify(args.run[1])
     if not parasite:
         print(f"ERROR: '{parasite_path}' doesn't exist or is inaccessible")
         return
@@ -55,12 +56,14 @@ def run(args):
 
 
 def verify(x_path):
-    if os.path.isdir(x_path) == False:
-
-        return False
-    else:
-        if not x_path.endswith("/"): x_path += "/"
-        return generate_map(x_path)
+    try:
+        if os.path.isdir(x_path) == False:
+            return False, False
+        else:
+            if not x_path.endswith("/"): x_path += "/"
+            return x_path, generate_map(x_path)
+    except:
+        return False, False
 
 def sync(host_path, host, parasite_path, parasite):
     for ld in host:
@@ -69,19 +72,20 @@ def sync(host_path, host, parasite_path, parasite):
         ### Item found on both drives
         if item in parasite:
             if host[item]['path'] != parasite[item]['path']:
-                # try:
-                old_path = parasite[item]['path'].replace("./", parasite_path)
-                old_path_mirror = parasite[item]['path'].replace("./", host_path)
-                new_path = host[item]['path'].replace("./", parasite_path)
-                try:
-                    os.makedirs(new_path.replace(item, ""))
-                except:
-                    pass
-                shutil.move(old_path, new_path)
-                if len(os.listdir(old_path.replace(item, ""))) == 0: os.rmdir(old_path.replace(item, ""))
-                if len(os.listdir(old_path_mirror.replace(item, ""))) == 0: os.rmdir(old_path_mirror.replace(item, ""))
-                # except:
-                #     pass
+                # Check that the items are identical
+                host_item_fingerprint = fingerprinter(host[item]['path'].replace('./', host_path))
+                parasite_item_fingerprint = fingerprinter(parasite[item]['path'].replace('./', parasite_path))
+                if host_item_fingerprint == parasite_item_fingerprint:
+                    old_path = parasite[item]['path'].replace("./", parasite_path)
+                    old_path_mirror = parasite[item]['path'].replace("./", host_path)
+                    new_path = host[item]['path'].replace("./", parasite_path)
+                    try:
+                        os.makedirs(new_path.replace(item, ""))
+                    except:
+                        pass
+                    shutil.move(old_path, new_path)
+                    rmdir(old_path.replace(item, ""))
+                    rmdir(old_path_mirror.replace(item, ""))
         else:
             shutil.copy(host[item]['path'].replace("./", host_path), host[item]['path'].replace("./", parasite_path))
 
@@ -107,6 +111,22 @@ def generate_map(x_path):
 
     return media
 
+def rmdir(x_path):
+    try:
+        if len(os.listdir(x_path)) == 0: os.rmdir(x_path)
+    except:
+        pass
+    return
+
+def fingerprinter(x_path):
+    hash_method = md5()
+    with open(x_path, 'rb') as input_file:
+        buf = input_file.read(BLOCK_SIZE)
+        while len(buf) > 0:
+            hash_method.update(buf)
+            buf = input_file.read(BLOCK_SIZE)
+
+    return hash_method.hexdigest()
 
 def main():
     parser = argparse.ArgumentParser(description = "CLISU (CLI Synchronization Utility)")
