@@ -72,25 +72,56 @@ def sync(host_path, host, parasite_path, parasite):
 
         ### Item found on both drives
         if item in parasite:
-            if host[item]['path'] != parasite[item]['path']:
+            hi, pi = render(host, parasite, item, host_path, parasite_path)
+            if hi['relative path'] != pi['relative path']:
                 # Check that the items are identical
-                host_item_fingerprint = fingerprinter(host[item]['path'].replace('./', host_path))
-                parasite_item_fingerprint = fingerprinter(parasite[item]['path'].replace('./', parasite_path))
-                if host_item_fingerprint == parasite_item_fingerprint:
-                    old_path = parasite[item]['path'].replace("./", parasite_path)
-                    old_path_mirror = parasite[item]['path'].replace("./", host_path)
-                    new_path = host[item]['path'].replace("./", parasite_path)
+                hi['fingerprint'] = fingerprinter(hi['full path'])
+                pi['fingerprint'] = fingerprinter(pi['full path'])
+                if hi['fingerprint'] == pi['fingerprint']:
                     try:
-                        os.makedirs(new_path.replace(item, ""))
+                        os.makedirs(hi['directory mirror'])
                     except:
                         pass
-                    shutil.move(old_path, new_path)
-                    rmdir(old_path.replace(item, ""))
-                    rmdir(old_path_mirror.replace(item, ""))
+                    shutil.move(pi['full path'], hi['path mirror'])
+                    rmdir(pi['directory'])
+                    rmdir(pi['directory mirror'])
         else:
             shutil.copy(host[item]['path'].replace("./", host_path), host[item]['path'].replace("./", parasite_path))
 
     print("Sync Successful!")
+
+def render(x, y, item, x_path, y_path):
+    # x = '/path/to/x/file.txt', y = '/path/to/y/fyle.txt'
+
+    # './file.txt', './fyle.txt'
+    x_relpath, y_relpath = x[item]['path'], y[item]['path']
+
+    # '/path/to/x/file.txt', '/path/to/y/fyle.txt'
+    x_full_path, y_full_path = x[item]['path'].replace('./', x_path), y[item]['path'].replace('./', y_path) #
+
+    # '/path/to/y/file.txt', '/path/to/x/fyle.txt'
+    x_full_path_mirror, y_full_path_mirror = x[item]['path'].replace('./', y_path), y[item]['path'].replace('./', x_path)
+
+    # '/path/to/x/', '/path/to/y/'
+    x_directory, y_directory = x_full_path.replace(item, ""), y_full_path.replace(item, "")
+
+    x_directory_mirror, y_directory_mirror = x_full_path_mirror.replace(item, ""), y_full_path_mirror.replace(item, "")
+
+    x_render = {
+    'relative path' : x_relpath,
+    'full path' : x_full_path,
+    'path mirror' : x_full_path_mirror,
+    'directory' : x_directory,
+    'directory mirror' : x_directory_mirror
+    }
+    y_render = {
+    'relative path' : y_relpath,
+    'full path' : y_full_path,
+    'path mirror' : y_full_path_mirror,
+    'directory' : y_directory,
+    'directory mirror' : y_directory_mirror
+    }
+    return x_render, y_render
 
 
 def header():
@@ -114,7 +145,7 @@ def generate_map(x_path):
 
 def rmdir(x_path):
     try:
-        if len(os.listdir(x_path)) == 0: os.rmdir(x_path)
+        if len(os.listdir(x_path)) == 0: os.rmdir(x_path) # If the directory is empty, delete it
     except:
         pass
     return
