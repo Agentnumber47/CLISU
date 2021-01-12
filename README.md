@@ -6,7 +6,7 @@ CLISU is a solution to the problem of synchronizing between computer and externa
 
 After venturing into the world of cloud-based streaming, having forsaken the old way, the bugs and limitations of the new way drove me to return to having a locally-owned collection. File management was one of the pain points that drove me to try the new way, so in returning to the old I am taking it upon myself to create an alternative that works best for me.
 
-After spending a couple of months trying to do everything at once (and failing), I scaled the code way back. Now that it functions usefully I will slowly add the bells and whistles that I envisioned for it. For this first release, all the program does is basically clone a directory (including subdirectories) from one location to another. The program will ignore files and subdirectories that begin with '.' (Ex. '/sys/path/.file.mp3')
+After spending a couple of months trying to do everything at once (and failing), I scaled the code way back. Now that it functions usefully I will slowly add the bells and whistles that I envisioned for it. For this first release, all the program does is basically clone a directory (including subdirectories) from one location to another. The program will ignore files and subdirectories that begin with '.' (Ex. '/sys/path/.file.mp3'). If the file already exists at the desired sync location, it will ignore it. If it exists at a different location, it will default to the one in the master.
 
 Currently, the program requires no external dependencies, but that will change in future versions.
 
