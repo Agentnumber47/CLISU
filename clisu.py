@@ -9,7 +9,8 @@
 
 # from colorama import init
 import argparse
-from dumb import fingerprinter, header, mkdir, rmvdir, yaml_load, yaml_save
+import check
+from dumb import err, fingerprinter, header, mkdir, rmvdir, yaml_load, yaml_save
 import os
 from shutil import copy, move
 import yaml
@@ -34,43 +35,24 @@ def capture_directory(direction, map=True):
         if entry.lower() == "x":
             exit()
 
-        x_path, x_items = verify(entry, map)
-        if not x_path: err(f"'{entry}' doesn't exist or is inaccessible")
-        else: break
+        x_path, x_items = check.verify(entry, map)
+        if x_path: break
+        else: continue
     return x_path, x_items
 
 
 # Entry Point #2
 def run(args):
 
-    path, items = verify(args.run[0])
-    if not path:
-        err(f"ERROR: '{args.run[0]}' doesn't exist or is inaccessible", pause=False)
-        return
-    host = Machine(path, items)
+    path, items = check.verify(args.run[0], pause=False)
+    if not path: return
+    else: host = Machine(path, items)
 
-    path, items = verify(args.run[1])
-    if not path:
-        err(f"ERROR: '{args.run[1]}' doesn't exist or is inaccessible", pause=False)
-        return
-
-    parasite = Machine(path, items)
+    path, items = check.verify(args.run[1], pause=False)
+    if not path: return
+    else: parasite = Machine(path, items)
     sync(host, parasite)
     return
-
-
-def verify(x_path, map=True):
-    try:
-        if os.path.isdir(x_path) == False:
-            return False, False
-        else:
-            if not x_path.endswith("/"): x_path = f"{x_path}/"
-            if map:
-                return x_path, generate_map(x_path)
-            else:
-                return x_path, False
-    except:
-        return False, False
 
 def sync(host, parasite):
     for ld in host.items:
@@ -124,17 +106,6 @@ def render(item, x, y):
     }
     return x_render, y_render
 
-
-def generate_map(x_path):
-    media = {}
-    for root, dirs, files in os.walk(x_path):
-        for name in files:
-            if not "/." in root and not name.startswith("."):
-                file_base = os.path.join(root, name) ## Root = path | Name = file
-                media[file_base.split("/")[-1]] = {"path": file_base.replace(f"{x_path}", "./")}
-
-    return media
-
 def profile(args):
     list_add = ['a', 'add', '+']
     list_change = ['c', 'change', 'edit']
@@ -153,73 +124,40 @@ def profile(args):
             while True:
                 header()
                 name = input("What would you like to name this profile?\n\n")
-                if name_check(name):
-                    yaml_name = yaml_check(name)
-                    # for char in name.lower():
-                    #     if char in "0 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z - _".split(" "): yaml_name += char
-                    #     if f"{yaml_name}.yaml" in list_profiles(): input("Profile name taken")
+                if check.Name(name):
+                    yaml_name = check.Yaml(name)
                     if not yaml_name: continue
                     else: break
                 else:
                     continue
-            data = {'name':name}
-            data['host'] = capture_directory("from", map=False)[0]
-            data['parasite'] = capture_directory("to", map=False)[0]
-            yaml_save(yaml_name, data)
-            return
+            host, parasite = capture_directory("from", map=False)[0], capture_directory("to", map=False)[0]
 
         elif len(args.profile) == 4:
-            if name_check(args.profile[1]):
-                print("Proper")
+            name = args.profile[1]
+            if check.Name(name, pause=False):
+                yaml_name = check.Yaml(name, pause=False)
+                if not yaml_name: return
             else:
-                print("FALSE")
+                return
+            host, parasite = check.verify(args.profile[2], map=False, pause=False)[0], check.verify(args.profile[3], map=False, pause=False)[0]
+            if not host or not parasite:
+                return
 
         else:
-            err("Incorrect use.\nUse either:\n     './clisu.py --profile add'\nOR\n     './clisu.py --profile add [NAME] [/from/dir] [/to/dir]'", pause=False)
+            err("Incorrect use.\nUse either:\n     './clisu.py --profile add'\nOR\n     './clisu.py --profile add [NAME] [/FROM/dir] [/TO/dir]'", pause=False)
+            return
+
+        data = {'name':name, 'host': host, 'parasite': parasite}
+
+        yaml_save(yaml_name, data)
+        return
+
     elif args.profile[0].lower() in list_change:
         pass
 
     else:
         print("No valid function selected. Run '-p help' for available functions.")
 
-def name_check(name, pause=True):
-    if name == "":
-        err("Profile name cannot be blank", pause)
-        return False
-    elif name.lower() == "x": exit()
-    elif len(name) > 20:
-        err("Profile name too long", pause)
-        return False
-    else:
-        return True
-
-def yaml_check(name, pause=True):
-    yaml_name = ""
-    for char in name.lower():
-        if char in "0 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z - _".split(" "): yaml_name += char
-    if f"{yaml_name}.yaml" in list_profiles():
-        err("Profile name taken", pause)
-        return False
-    else:
-        return yaml_name
-
-def err(e, pause=True):
-    if pause:
-        input(f"\n{e}\n")
-    else:
-        print(f"\n{e}\n")
-    return
-
-def list_profiles():
-    profile_dir = os.listdir('./profiles')
-    try:
-        for file in profile_dir:
-            if not file.endswith(".yaml"):
-                profile_dir.remove(file)
-    except:
-        pass
-    finally:
-        return profile_dir
 
 def main():
     # Check for proper setup

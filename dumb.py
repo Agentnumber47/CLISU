@@ -50,3 +50,10 @@ def yaml_load(path):
 def yaml_save(name, data):
     with open(f"./profiles/{name}.yaml", 'w') as f:
         yaml_dump = yaml.dump(data, f)
+
+def err(e, pause=True):
+    if pause:
+        input(f"\n{e}\n")
+    else:
+        print(f"\n{e}")
+    return
