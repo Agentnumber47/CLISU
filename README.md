@@ -8,9 +8,11 @@ After venturing into the world of cloud-based streaming, having forsaken the old
 
 After spending a couple of months trying to do everything at once (and failing), I scaled the code way back. Now that it functions usefully I will slowly add the bells and whistles that I envisioned for it. For this first release, all the program does is basically clone a directory (including subdirectories) from one location to another. The program will ignore files and subdirectories that begin with '.' (Ex. '/sys/path/.file.mp3'). If the file already exists at the desired sync location, it will ignore it. If it exists at a different location, it will default to the one in the master.
 
-Currently, the program requires no external dependencies, but that will change in future versions.
-
 The program will change dramatically, in both form and function, in the future, so as updates are applied, make sure to check back. Or don't, it's your life.
+
+# Dependencies
+
+- PyYAML==5.3.1
 
 # Using CLISU
 Using CLISU is easy.
@@ -27,6 +29,8 @@ Note: Keep in mind that the directories are case-sensitive and if there are any 
 ## Running With Prompts
 If you want the program to guide you, simply use the '-t' or '--terminal' flag.
 Example: './clisu.py -t'
+
+If you want to stop the program, simply enter 'x'.
 
 # CLI
 

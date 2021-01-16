@@ -9,93 +9,99 @@
 
 # from colorama import init
 import argparse
-from hashlib import md5
+from dumb import fingerprinter, header, mkdir, rmvdir, yaml_load, yaml_save
 import os
-import shutil
+from shutil import copy, move
+import yaml
 
-BLOCK_SIZE = 65536
-
+# Entry Point #1
 def terminal(args):
-    # Grab and map the host directory
-    while True:
-        header()
-        entry = input("What is the master directory? [Ex. /path/to/dir]\n")
-        if entry.lower() == "x":
-            exit()
-
-        host_path, host = verify(entry)
-        if not host: input(f"\n'{host_path}' doesn't exist or is inaccessible\n")
-        else: break
-
-    # Grab and map the parasite directory
-    while True:
-        header()
-        entry = input("What is the directory you want to sync to?\n")
-        if entry.lower() == "x":
-            exit()
-
-        parasite_path, parasite = verify(entry)
-        if not parasite: input(f"\n'{parasite_path}' doesn't exist or is inaccessible\n")
-        else: break
+    # Grab and map directories
+    path, items = capture_directory("from")
+    host = Machine(path, items)
+    path, items = capture_directory("to")
+    parasite = Machine(path, items)
 
     # Begin syncing process
     header()
-    sync(host_path, host, parasite_path, parasite)
+    sync(host, parasite)
+    return
 
+def capture_directory(direction, map=True):
+    while True:
+        header()
+        entry = input(f"What is the directory you want to sync {direction}?\n\n")
+        if entry.lower() == "x":
+            exit()
+
+        x_path, x_items = verify(entry, map)
+        if not x_path: input(f"\n'{x_path}' doesn't exist or is inaccessible\n")
+        else: break
+    return x_path, x_items
+
+
+# Entry Point #2
 def run(args):
-    host_path, host = verify(args.run[0])
-    if not host:
-        print(f"ERROR: '{host_path}' doesn't exist or is inaccessible")
+
+    path, items = verify(args.run[0])
+    if not items:
+        print(f"ERROR: '{path}' doesn't exist or is inaccessible")
+        return
+    host = Machine(path, items)
+
+    path, items = verify(args.run[1])
+    if not items:
+        print(f"ERROR: '{path}' doesn't exist or is inaccessible")
         return
 
-    parasite_path, parasite = verify(args.run[1])
-    if not parasite:
-        print(f"ERROR: '{parasite_path}' doesn't exist or is inaccessible")
-        return
-
-    sync(host_path, host, parasite_path, parasite)
+    parasite = Machine(path, items)
+    sync(host, parasite)
+    return
 
 
-def verify(x_path):
+def verify(x_path, map=True):
     try:
         if os.path.isdir(x_path) == False:
             return False, False
         else:
-            if not x_path.endswith("/"): x_path += "/"
-            return x_path, generate_map(x_path)
+            if not x_path.endswith("/"): x_path = f"{x_path}/"
+            if map:
+                return x_path, generate_map(x_path)
+            else:
+                return x_path, False
     except:
         return False, False
 
-def sync(host_path, host, parasite_path, parasite):
-    for ld in host:
+def sync(host, parasite):
+    for ld in host.items:
         item = ld # Do this or python will flip the fuck out
 
         ### Item found on both drives
-        if item in parasite:
-            hi, pi = render(host, parasite, item, host_path, parasite_path)
+        if item in parasite.items:
+            hi, pi = render(item, host, parasite)
             if hi['relative path'] != pi['relative path']:
                 # If the items are identical, move to match host map
                 if fingerprinter(hi['full path']) == fingerprinter(pi['full path']):
                     mkdir(hi['directory mirror'])
-                    shutil.move(pi['full path'], hi['path mirror'])
-                    rmdir(pi['directory'])
-                    rmdir(pi['directory mirror'])
+                    move(pi['full path'], hi['path mirror'])
+                    for i in [pi['directory'], pi['directory mirror']]: rmvdir(i)
         else:
-            shutil.copy(host[item]['path'].replace("./", host_path), host[item]['path'].replace("./", parasite_path))
+            copy(host_items[item]['path'].replace("./", host_path), host_items[item]['path'].replace("./", parasite_path))
 
     print("Sync Successful!")
+    return
 
-def render(x, y, item, x_path, y_path):
+def render(item, x, y):
     # x = '/path/to/x/file.txt', y = '/path/to/y/fyle.txt'
 
     # './file.txt', './fyle.txt'
-    x_relpath, y_relpath = x[item]['path'], y[item]['path']
+    x_relpath, y_relpath = x.items[item]['path'], y.items[item]['path']
 
     # '/path/to/x/file.txt', '/path/to/y/fyle.txt'
-    x_full_path, y_full_path = x[item]['path'].replace('./', x_path), y[item]['path'].replace('./', y_path) #
+    x_full_path, y_full_path = x.items[item]['path'].replace('./', x.path), y.items[item]['path'].replace('./', y.path) #
 
     # '/path/to/y/file.txt', '/path/to/x/fyle.txt'
-    x_full_path_mirror, y_full_path_mirror = x[item]['path'].replace('./', y_path), y[item]['path'].replace('./', x_path)
+    x_full_path_mirror, y_full_path_mirror = x.items[item]['path'].replace('./', y.path), y.items[item]['path'].replace('./', x.path)
 
     # '/path/to/x/', '/path/to/y/'
     x_directory, y_directory = x_full_path.replace(item, ""), y_full_path.replace(item, "")
@@ -119,15 +125,6 @@ def render(x, y, item, x_path, y_path):
     return x_render, y_render
 
 
-def header():
-    shell_columns = os.get_terminal_size().columns
-    # print("\033[36m")
-    os.system("clear")
-    print(f"#     CLISU     #".center(shell_columns, "#"))
-    # print("\033[39m")
-    print("")
-    return
-
 def generate_map(x_path):
     media = {}
     for root, dirs, files in os.walk(x_path):
@@ -138,44 +135,78 @@ def generate_map(x_path):
 
     return media
 
-def rmdir(x_path):
+def profile(args):
+    if args.profile[0].lower() in ['h', 'help']:
+        print("Purpose: To utilize predefined parameters to perform sync functions.")
+        print("Use: './clisu.py --profile FUNCTION'")
+        print("\nAdd ['a', 'add', '+']:\n     Add a profile\n     OPTIONAL: 'add [NAME] [/from/dir] [/to/dir]'")
+        print("Change ['c', 'change', 'edit']:\n     Change a profile\n     OPTIONAL: 'change [NAME]'")
+        print("Delete ['d', 'rm', 'delete', 'remove', '-']:\n     Delete a profile\n     OPTIONAL: 'delete [NAME]'")
+        print("List ['l', 'list', 'all']:\n     List created profiles")
+        print("")
+    elif args.profile[0].lower() in ['a', 'add', '+']:
+        ## 1 and 4
+        if len(args.profile) == 1:
+            while True:
+                header()
+                name = input("What would you like to name this profile?\n\n")
+                if name == "": input("Profile name cannot be blank\n")
+                elif name.lower() == "x": exit()
+                elif len(name) > 20: input("Profile name too long")
+                else:
+                    yaml_name = ""
+                    for char in name.lower():
+                        if char in "0 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z - _".split(" "): yaml_name += char
+                    if f"{yaml_name}.yaml" in list_profiles(): input("Profile name taken")
+                    else: break
+            data = {'name':name}
+            data['host'] = capture_directory("from", map=False)[0]
+            data['parasite'] = capture_directory("to", map=False)[0]
+            yaml_save(yaml_name, data)
+
+    else:
+        print("No valid function selected. Run '-p help' for available functions.")
+
+
+def list_profiles():
+    profile_dir = os.listdir('./profiles')
     try:
-        if len(os.listdir(x_path)) == 0: os.rmdir(x_path) # If the directory is empty, delete it
+        for file in profile_dir:
+            if not file.endswith(".yaml"):
+                profile_dir.remove(file)
     except:
         pass
-    return
-
-def mkdir(x_path):
-    try:
-        os.makedirs(x_path)
-    except:
-        pass
-    return
-
-def fingerprinter(x_path):
-    hash_method = md5()
-    with open(x_path, 'rb') as input_file:
-        buf = input_file.read(BLOCK_SIZE)
-        while len(buf) > 0:
-            hash_method.update(buf)
-            buf = input_file.read(BLOCK_SIZE)
-
-    return hash_method.hexdigest()
+    finally:
+        return profile_dir
 
 def main():
+    # Check for proper setup
+    if not os.path.isfile('./config.yaml'):
+        with open(f"./config.yaml", 'w') as f: yaml_dump = yaml.dump({'default' : False}, f)
+    mkdir('./profiles')
+
     parser = argparse.ArgumentParser(description = "CLISU (CLI Synchronization Utility)")
 
     parser.add_argument("-t", "--terminal", nargs = "*", metavar = "", type = str, help = "run with prompts in terminal")
     parser.add_argument("-r", "--run", nargs = 2, metavar = ('/path/from', '/path/to'), type = str, help = "run without prompts")
+    parser.add_argument("-p", "--profile", nargs = "*", metavar = "FUNCTION", type = str, help = "profile functions")
+    ## Defaults
 
     # parse the arguments from standard input
     args = parser.parse_args()
 
     # calling functions depending on type of argument
-    if args.terminal != None:
-        terminal(args)
-    elif args.run != None:
-        run(args)
+    if args.terminal != None: terminal(args)
+    elif args.run != None: run(args)
+    elif args.profile != None: profile(args)
+
+    return
+
+class Machine:
+    def __init__(self, path, items):
+        self.items = items
+        self.path = path
+
 
 if __name__ == '__main__':
     main()
