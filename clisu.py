@@ -35,7 +35,7 @@ def capture_directory(direction, map=True):
             exit()
 
         x_path, x_items = verify(entry, map)
-        if not x_path: input(f"\n'{x_path}' doesn't exist or is inaccessible\n")
+        if not x_path: err(f"'{entry}' doesn't exist or is inaccessible")
         else: break
     return x_path, x_items
 
@@ -44,14 +44,14 @@ def capture_directory(direction, map=True):
 def run(args):
 
     path, items = verify(args.run[0])
-    if not items:
-        print(f"ERROR: '{path}' doesn't exist or is inaccessible")
+    if not path:
+        err(f"ERROR: '{args.run[0]}' doesn't exist or is inaccessible", pause=False)
         return
     host = Machine(path, items)
 
     path, items = verify(args.run[1])
-    if not items:
-        print(f"ERROR: '{path}' doesn't exist or is inaccessible")
+    if not path:
+        err(f"ERROR: '{args.run[1]}' doesn't exist or is inaccessible", pause=False)
         return
 
     parasite = Machine(path, items)
@@ -136,37 +136,79 @@ def generate_map(x_path):
     return media
 
 def profile(args):
+    list_add = ['a', 'add', '+']
+    list_change = ['c', 'change', 'edit']
+    list_delete = ['d', 'rm', 'delete', 'remove', '-']
+    list_list = ['l', 'list', 'all']
     if args.profile[0].lower() in ['h', 'help']:
         print("Purpose: To utilize predefined parameters to perform sync functions.")
         print("Use: './clisu.py --profile FUNCTION'")
-        print("\nAdd ['a', 'add', '+']:\n     Add a profile\n     OPTIONAL: 'add [NAME] [/from/dir] [/to/dir]'")
-        print("Change ['c', 'change', 'edit']:\n     Change a profile\n     OPTIONAL: 'change [NAME]'")
-        print("Delete ['d', 'rm', 'delete', 'remove', '-']:\n     Delete a profile\n     OPTIONAL: 'delete [NAME]'")
-        print("List ['l', 'list', 'all']:\n     List created profiles")
+        print(f"\nAdd {[i for i in list_add]}:\n     Add a profile\n     OPTIONAL: 'add [NAME] [/from/dir] [/to/dir]'")
+        print(f"Change {[i for i in list_change]}:\n     Change a profile\n     OPTIONAL: 'change [NAME]'")
+        print(f"Delete {[i for i in list_delete]}:\n     Delete a profile\n     OPTIONAL: 'delete [NAME]'")
+        print(f"List {[i for i in list_list]}:\n     List created profiles")
         print("")
-    elif args.profile[0].lower() in ['a', 'add', '+']:
-        ## 1 and 4
+    elif args.profile[0].lower() in list_add:
         if len(args.profile) == 1:
             while True:
                 header()
                 name = input("What would you like to name this profile?\n\n")
-                if name == "": input("Profile name cannot be blank\n")
-                elif name.lower() == "x": exit()
-                elif len(name) > 20: input("Profile name too long")
-                else:
-                    yaml_name = ""
-                    for char in name.lower():
-                        if char in "0 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z - _".split(" "): yaml_name += char
-                    if f"{yaml_name}.yaml" in list_profiles(): input("Profile name taken")
+                if name_check(name):
+                    yaml_name = yaml_check(name)
+                    # for char in name.lower():
+                    #     if char in "0 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z - _".split(" "): yaml_name += char
+                    #     if f"{yaml_name}.yaml" in list_profiles(): input("Profile name taken")
+                    if not yaml_name: continue
                     else: break
+                else:
+                    continue
             data = {'name':name}
             data['host'] = capture_directory("from", map=False)[0]
             data['parasite'] = capture_directory("to", map=False)[0]
             yaml_save(yaml_name, data)
+            return
+
+        elif len(args.profile) == 4:
+            if name_check(args.profile[1]):
+                print("Proper")
+            else:
+                print("FALSE")
+
+        else:
+            err("Incorrect use.\nUse either:\n     './clisu.py --profile add'\nOR\n     './clisu.py --profile add [NAME] [/from/dir] [/to/dir]'", pause=False)
+    elif args.profile[0].lower() in list_change:
+        pass
 
     else:
         print("No valid function selected. Run '-p help' for available functions.")
 
+def name_check(name, pause=True):
+    if name == "":
+        err("Profile name cannot be blank", pause)
+        return False
+    elif name.lower() == "x": exit()
+    elif len(name) > 20:
+        err("Profile name too long", pause)
+        return False
+    else:
+        return True
+
+def yaml_check(name, pause=True):
+    yaml_name = ""
+    for char in name.lower():
+        if char in "0 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z - _".split(" "): yaml_name += char
+    if f"{yaml_name}.yaml" in list_profiles():
+        err("Profile name taken", pause)
+        return False
+    else:
+        return yaml_name
+
+def err(e, pause=True):
+    if pause:
+        input(f"\n{e}\n")
+    else:
+        print(f"\n{e}\n")
+    return
 
 def list_profiles():
     profile_dir = os.listdir('./profiles')
