@@ -13,14 +13,19 @@ import check
 from dumb import err, fingerprinter, header, mkdir, rmvdir, yaml_load, yaml_save
 import os
 from shutil import copy, move
+import ui
 import yaml
+
+### Have profile cache folders
+
+QUIT = ['quit', 'exit', 'q', 'x']
 
 # Entry Point #1
 def terminal(args):
     # Grab and map directories
-    path, items = capture_directory("from")
+    path, items = ui.capture_directory("from")
     host = Machine(path, items)
-    path, items = capture_directory("to")
+    path, items = ui.capture_directory("to")
     parasite = Machine(path, items)
 
     # Begin syncing process
@@ -28,22 +33,8 @@ def terminal(args):
     sync(host, parasite)
     return
 
-def capture_directory(direction, map=True):
-    while True:
-        header()
-        entry = input(f"What is the directory you want to sync {direction}?\n\n")
-        if entry.lower() == "x":
-            exit()
-
-        x_path, x_items = check.verify(entry, map)
-        if x_path: break
-        else: continue
-    return x_path, x_items
-
-
 # Entry Point #2
 def run(args):
-
     path, items = check.verify(args.run[0], pause=False)
     if not path: return
     else: host = Machine(path, items)
@@ -107,30 +98,21 @@ def render(item, x, y):
     return x_render, y_render
 
 def profile(args):
-    list_add = ['a', 'add', '+']
-    list_change = ['c', 'change', 'edit']
+    list_add = ['a', 'add', '+', 'create']
+    list_change = ['c', 'change', 'edit', 'set', 'settings']
     list_delete = ['d', 'rm', 'delete', 'remove', '-']
     list_list = ['l', 'list', 'all']
     if args.profile[0].lower() in ['h', 'help']:
         print("Purpose: To utilize predefined parameters to perform sync functions.")
         print("Use: './clisu.py --profile FUNCTION'")
-        print(f"\nAdd {[i for i in list_add]}:\n     Add a profile\n     OPTIONAL: 'add [NAME] [/from/dir] [/to/dir]'")
-        print(f"Change {[i for i in list_change]}:\n     Change a profile\n     OPTIONAL: 'change [NAME]'")
-        print(f"Delete {[i for i in list_delete]}:\n     Delete a profile\n     OPTIONAL: 'delete [NAME]'")
-        print(f"List {[i for i in list_list]}:\n     List created profiles")
-        print("")
+        print(f"\nAdd {list_add}:\n     Add a profile\n     OPTIONAL: 'add [NAME] [/FROM/dir] [/TO/dir]'\n")
+        print(f"Change {list_change}:\n     Change a profile\n     OPTIONAL: 'change [NAME]'\n")
+        print(f"Delete {list_delete}:\n     Delete a profile\n     OPTIONAL: 'delete [NAME]'\n")
+        print(f"List {list_list}:\n     List created profiles\n")
     elif args.profile[0].lower() in list_add:
         if len(args.profile) == 1:
-            while True:
-                header()
-                name = input("What would you like to name this profile?\n\n")
-                if check.Name(name):
-                    yaml_name = check.Yaml(name)
-                    if not yaml_name: continue
-                    else: break
-                else:
-                    continue
-            host, parasite = capture_directory("from", map=False)[0], capture_directory("to", map=False)[0]
+            name, yaml_name = ui.capture_name()
+            host, parasite = ui.capture_directory("from", map=False)[0], ui.capture_directory("to", map=False)[0]
 
         elif len(args.profile) == 4:
             name = args.profile[1]
@@ -142,7 +124,6 @@ def profile(args):
             host, parasite = check.verify(args.profile[2], map=False, pause=False)[0], check.verify(args.profile[3], map=False, pause=False)[0]
             if not host or not parasite:
                 return
-
         else:
             err("Incorrect use.\nUse either:\n     './clisu.py --profile add'\nOR\n     './clisu.py --profile add [NAME] [/FROM/dir] [/TO/dir]'", pause=False)
             return
@@ -150,10 +131,88 @@ def profile(args):
         data = {'name':name, 'host': host, 'parasite': parasite}
 
         yaml_save(yaml_name, data)
+        print(f"\nProfile '{name}' created successfully")
         return
 
     elif args.profile[0].lower() in list_change:
-        pass
+        profiles = [i.split('.')[0] for i in check.audit_profiles()]
+        if len(args.profile) == 1:
+            if len(profiles) == 0:
+                err("No profiles found\nUse '-p add' to create", pause=False)
+                return
+            else:
+                entry = ui.profile_list_menu(profiles)
+
+        elif len(args.profile) == 2:
+            entry = args.profile[1]
+            if not entry in profiles:
+                err(f"Profile '{entry}' not found", pause=False)
+                return
+
+        else:
+            err("Incorrect use.\nUse either:\n     './clisu.py --profile change'\nOR\n     './clisu.py --profile change [NAME]'", pause=False)
+            return
+
+        old = f"./profiles/{entry}.yaml"
+        data = yaml_load(old)
+        change = False
+        yaml_name = entry
+        while True:
+            header()
+            print(f"Please make a selection:\n\n [1] Name: {data['name']}\n [2] FROM: {data['host']}\n [3] TO: {data['parasite']}\n [*] Advanced Settings\n")
+            entry = input("").strip()
+            if entry.lower() in QUIT:
+                if change:
+                    yaml_save(yaml_name, data)
+                    print("Changes saved")
+                exit()
+            elif entry == "1":
+                data['name'], yaml_name = ui.capture_name()
+                os.rename(old, f"./profiles/{yaml_name}.yaml")
+                old = f"./profiles/{yaml_name}.yaml"
+                change = True
+            elif entry == "2":
+                data['host'] = ui.capture_directory("from", map=False)[0]
+                change = True
+            elif entry == "3":
+                data['parasite'] = ui.capture_directory("to", map=False)[0]
+                change = True
+            elif entry == "*":
+                pass
+            else:
+                err("Not a valid selection ('x' to quit)")
+
+    elif args.profile[0].lower() in list_delete:
+        profiles = [i.split('.')[0] for i in check.audit_profiles()]
+        if len(args.profile) == 1:
+            if len(profiles) == 0:
+                err("No profiles found\nUse '-p add' to create", pause=False)
+                return
+            else:
+                entry = ui.profile_list_menu(profiles)
+
+        elif len(args.profile) == 2:
+            entry = args.profile[1]
+            if not entry in profiles:
+                err(f"Profile '{entry}' not found", pause=False)
+                return
+        else:
+            err("Incorrect use.\nUse either:\n     './clisu.py --profile delete'\nOR\n     './clisu.py --profile delete [NAME]'", pause=False)
+            return
+
+        data = yaml_load(f"./profiles/{entry}.yaml")
+        while True:
+            header()
+            confirm = input(f"Delete '{data['name']}'\n\nAre you sure [y/n]?\n\n").lower().strip()
+            if confirm in QUIT or confirm in ['n', 'no']:
+                exit()
+            elif confirm in ['y', 'yes']:
+                os.remove(f"./profiles/{entry}.yaml")
+                print(f"Profile '{entry}' deleted successfully")
+                return
+            else:
+                continue
+
 
     else:
         print("No valid function selected. Run '-p help' for available functions.")

@@ -53,7 +53,10 @@ def yaml_save(name, data):
 
 def err(e, pause=True):
     if pause:
-        input(f"\n{e}\n")
+        input(f"{e}\n")
     else:
-        print(f"\n{e}")
+        print(f"{e}")
     return
+
+
+# /home/sev/synctest PC/

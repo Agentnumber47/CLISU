@@ -28,7 +28,10 @@ Note: Keep in mind that the directories are case-sensitive and if there are any 
 
 ## Running With Prompts
 If you want the program to guide you, simply use the '-t' or '--terminal' flag.
-Example: './clisu.py -t'
+```
+# Example #
+./clisu.py -t
+```
 
 If you want to stop the program, simply enter 'x'.
 
@@ -36,7 +39,8 @@ If you want to stop the program, simply enter 'x'.
 
 To use a command-line interface program (for the most part and including here), you need to load up your terminal or command prompt. The user will type the name of the program file (in this case './clisu.py'), the 'flag' of the function (something like '-x' or '--xyz', typically), and any necessary/optional information after.
 
-An example is: './clisu.py --help'
+An example is:
+```./clisu.py --help```
 './clisu.py' is the program file and '--help' is the flag.
 
 # Limitations

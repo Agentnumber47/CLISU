@@ -42,13 +42,13 @@ def Yaml(name, pause=True):
     yaml_name = ""
     for char in name.lower():
         if char in "0 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z - _".split(" "): yaml_name += char
-    if f"{yaml_name}.yaml" in list_profiles():
+    if f"{yaml_name}.yaml" in audit_profiles():
         dumb.err("Profile name taken", pause)
         return False
     else:
         return yaml_name
 
-def list_profiles():
+def audit_profiles():
     profile_dir = listdir('./profiles')
     try:
         for file in profile_dir:
