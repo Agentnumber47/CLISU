@@ -102,6 +102,10 @@ def profile(args):
     list_change = ['c', 'change', 'edit', 'set', 'settings']
     list_delete = ['d', 'rm', 'delete', 'remove', '-']
     list_list = ['l', 'list', 'all']
+
+    if len(args.profile) == 0:
+        print("No valid function selected. Run '-p help' for available functions.")
+        return
     if args.profile[0].lower() in ['h', 'help']:
         print("Purpose: To utilize predefined parameters to perform sync functions.")
         print("Use: './clisu.py --profile FUNCTION'")
@@ -125,7 +129,7 @@ def profile(args):
             if not host or not parasite:
                 return
         else:
-            err("Incorrect use.\nUse either:\n     './clisu.py --profile add'\nOR\n     './clisu.py --profile add [NAME] [/FROM/dir] [/TO/dir]'", pause=False)
+            err("Incorrect use.\nUse:\n     './clisu.py --profile add'\nOR\n     './clisu.py --profile add [NAME] [/FROM/dir] [/TO/dir]'", pause=False)
             return
 
         data = {'name':name, 'host': host, 'parasite': parasite}
@@ -150,7 +154,7 @@ def profile(args):
                 return
 
         else:
-            err("Incorrect use.\nUse either:\n     './clisu.py --profile change'\nOR\n     './clisu.py --profile change [NAME]'", pause=False)
+            err("Incorrect use.\nUse:\n     './clisu.py --profile change'\nOR\n     './clisu.py --profile change [NAME]'", pause=False)
             return
 
         old = f"./profiles/{entry}.yaml"
@@ -197,7 +201,7 @@ def profile(args):
                 err(f"Profile '{entry}' not found", pause=False)
                 return
         else:
-            err("Incorrect use.\nUse either:\n     './clisu.py --profile delete'\nOR\n     './clisu.py --profile delete [NAME]'", pause=False)
+            err("Incorrect use.\nUse:\n     './clisu.py --profile delete'\nOR\n     './clisu.py --profile delete [NAME]'", pause=False)
             return
 
         data = yaml_load(f"./profiles/{entry}.yaml")
@@ -213,9 +217,17 @@ def profile(args):
             else:
                 continue
 
-
-    else:
-        print("No valid function selected. Run '-p help' for available functions.")
+    elif args.profile[0].lower() in list_list:
+        profiles = [i.split('.')[0] for i in check.audit_profiles()]
+        if len(args.profile) == 1:
+            if len(profiles) == 0:
+                err("No profiles found\nUse '-p add' to create", pause=False)
+                return
+            else:
+                entry = ui.profile_list_menu(profiles, pause=False)
+        else:
+            err("Incorrect use.\nUse:\n     './clisu.py --profile list'", pause=False)
+            return
 
 
 def main():

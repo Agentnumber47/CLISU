@@ -1,21 +1,27 @@
-from dumb import header, yaml_load
+from dumb import err, header, yaml_load
 import check
 
 QUIT = ['quit', 'exit', 'q', 'x']
 
-def profile_list_menu(profiles):
+def profile_list_menu(profiles, pause=True):
     display_names = [yaml_load(f"./profiles/{i}.yaml")['name'] for i in profiles]
     while True:
-        header()
-        print("Available profiles:")
-        [print(f"   - {i}") for i in display_names]
-        entry = input("\n").lower().strip()
-        if entry in QUIT:
-            exit()
-        elif entry in profiles:
-            return entry
+        if pause:
+            header()
+            print("Available profiles:")
         else:
-            err("Profile not found")
+            print("\nAvailable profiles:")
+        [print(f"   - {i}") for i in display_names]
+        if pause:
+            entry = input("\n").lower().strip()
+            if entry in QUIT:
+                exit()
+            elif entry in profiles:
+                return entry
+            else:
+                err("Profile not found")
+        else:
+            return
 
 def capture_directory(direction, map=True):
     while True:
