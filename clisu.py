@@ -1,11 +1,10 @@
 #! /usr/bin/env python
 
-#### CLISU v 0.1.1
+#### CLISU v 0.1.2
 #### Code by: Agentnumber47
 #### Nickname: [0.1] Ground Zero [Scaled back from earlier attempts and rebuilding to higher glory]
 #### Source: https://github.com/Agentnumber47/CLISU
-#### Support me! https://ko-fi.com/agentnumber47
-#### Differences between 0.1.1 and 0.1: Added file integrity check
+#### Differences between 0.1.2 and 0.1.1: Added basic profile functionality
 
 # from colorama import init
 import argparse
@@ -102,6 +101,7 @@ def profile(args):
     list_change = ['c', 'change', 'edit', 'set', 'settings']
     list_delete = ['d', 'rm', 'delete', 'remove', '-']
     list_list = ['l', 'list', 'all']
+    list_run = ['r', 'run']
 
     if len(args.profile) == 0:
         print("No valid function selected. Run '-p help' for available functions.")
@@ -113,6 +113,7 @@ def profile(args):
         print(f"Change {list_change}:\n     Change a profile\n     OPTIONAL: 'change [NAME]'\n")
         print(f"Delete {list_delete}:\n     Delete a profile\n     OPTIONAL: 'delete [NAME]'\n")
         print(f"List {list_list}:\n     List created profiles\n")
+        print(f"List {list_run}:\n     Run CLISU with the profile\n")
     elif args.profile[0].lower() in list_add:
         if len(args.profile) == 1:
             name, yaml_name = ui.capture_name()
@@ -228,6 +229,25 @@ def profile(args):
         else:
             err("Incorrect use.\nUse:\n     './clisu.py --profile list'", pause=False)
             return
+
+    elif args.profile[0].lower() in list_run:
+        profiles = [i.split('.')[0] for i in check.audit_profiles()]
+        if len(profiles) == 0:
+            err("No profiles found\nUse '-p add' to create", pause=False)
+            return
+
+        if len(args.profile) == 1:
+            err("Incorrect use.\nUse:\n     './clisu.py --profile run [PROFILE]'", pause=False)
+            return
+        else:
+            called_name = "".join(args.profile[1:])
+            if called_name in profiles:
+                data = yaml_load(f"./profiles/{called_name}.yaml")
+                args.run = [data['host'], data['parasite']]
+                run(args)
+                return
+            else:
+                err("Profile not found", pause=False)
 
 
 def main():

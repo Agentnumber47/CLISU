@@ -17,9 +17,11 @@ The program will change dramatically, in both form and function, in the future, 
 # Using CLISU
 Using CLISU is easy.
 
-There are two ways to launch the program: directly or with terminal prompts. Both ways involve the command-line. If this is your first time, quickly look at the CLI section below before continuing.
+There are three methods to launch the program: directly, with terminal prompts or using a profile. All methods involve the command-line. If this is your first time, quickly look at the CLI section below before continuing.
 
 Using the '-h' or '--help' flags will launch the help.
+
+NOTE: CLISU is still being developed. While chance for error is currently very low, please use at your own discretion.
 
 ## Running Directly
 If you just want to point the program to the desired locations and let it work, use the '-r' or '--run' flag, including the FROM directory, then the TO directory.
@@ -35,6 +37,25 @@ If you want the program to guide you, simply use the '-t' or '--terminal' flag.
 
 If you want to stop the program, simply enter 'x'.
 
+## Using Profiles [NEW!]
+
+For the full list of flags and options, use '[-p | --profile] help'
+
+Profiles exist to save you the time of typing the full program path every time you run CLISU.
+
+First, you must have a profile created:
+```
+./clisu.py --profile add
+```
+
+To run the profile:
+```
+./clisu.py --profile run [NAME]
+```
+
+You can also list the names using '-p list'
+
+
 # CLI
 
 To use a command-line interface program (for the most part and including here), you need to load up your terminal or command prompt. The user will type the name of the program file (in this case './clisu.py'), the 'flag' of the function (something like '-x' or '--xyz', typically), and any necessary/optional information after.
@@ -49,3 +70,10 @@ Currently the code only does the one thing.
 I wasted a few days of my life trying to get the program to interact with the protocol known as MTP and gotten nowhere, so for the time being the program will not sync with an MTP-connected device. I hope to fix this eventually.
 
 This program is being developed on and for Linux, so cross-platform capability isn't guaranteed at this time.
+
+# Changelog and roadmap:
+
+- 0.1.3: FTP support
+- 0.1.2: Added basic profile functionality (You Are Here)
+- 0.1.1: Added file integrity check
+- 0.1: Creation
