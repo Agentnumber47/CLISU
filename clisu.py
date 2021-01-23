@@ -2,7 +2,7 @@
 
 #### CLISU v 0.1.2
 #### Code by: Agentnumber47
-#### Nickname: [0.1] Ground Zero [Scaled back from earlier attempts and rebuilding to higher glory]
+#### Nickname: [0.1.2] Ground Zero.2 [The Profile Thang]
 #### Source: https://github.com/Agentnumber47/CLISU
 #### Differences between 0.1.2 and 0.1.1: Added basic profile functionality
 
